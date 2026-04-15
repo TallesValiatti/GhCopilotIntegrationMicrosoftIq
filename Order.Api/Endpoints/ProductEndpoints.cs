@@ -8,6 +8,7 @@ public static class ProductEndpoints
 {
     public static void MapProductEndpoints(this WebApplication app)
     {
+        // GET /products - Get all products
         app.MapGet("/products", async (AppDbContext db) =>
         {
             var products = await db.Products

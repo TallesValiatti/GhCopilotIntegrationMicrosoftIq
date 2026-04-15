@@ -9,14 +9,21 @@ public static class OrderEndpoints
 {
     public static void MapOrderEndpoints(this WebApplication app)
     {
+        // POST /orders - Create a new order
         app.MapPost("/orders", async (CreateOrderDto request, AppDbContext db) =>
         {
-            var productIds = request.Items.Select(i => i.ProductId).ToList();
+            var productIds = request.Items
+            .Select(i => i.ProductId)
+            .ToList();
+
             var products = await db.Products
                 .Where(p => productIds.Contains(p.Id))
                 .ToDictionaryAsync(p => p.Id);
 
-            var missingIds = productIds.Except(products.Keys).ToList();
+            var missingIds = productIds
+            .Except(products.Keys)
+            .ToList();
+            
             if (missingIds.Count > 0)
             {
                 return Results.BadRequest($"Products not found: {string.Join(", ", missingIds)}");
@@ -48,6 +55,7 @@ public static class OrderEndpoints
             return Results.Created($"/orders/{order.Id}", orderDto);
         });
 
+        // GET /orders - Retrieve all orders with product details
         app.MapGet("/orders", async (AppDbContext db) =>
         {
             var orders = await db.Orders
