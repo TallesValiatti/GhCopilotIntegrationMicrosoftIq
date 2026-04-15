@@ -1,0 +1,57 @@
+@baseUrl = http://localhost:5225
+
+### GET all products
+# Returns all seeded products:
+# 1 - Laptop    ($1299.99)
+# 2 - Mouse     ($29.99)
+# 3 - Keyboard  ($79.99)
+# 4 - Monitor   ($499.99)
+GET {{baseUrl}}/products
+Accept: application/json
+
+###
+
+### POST create order - Laptop + Keyboard
+POST {{baseUrl}}/orders
+Content-Type: application/json
+
+{
+  "items": [
+    { "productId": 1, "quantity": 1 },
+    { "productId": 3, "quantity": 2 }
+  ]
+}
+
+###
+
+### POST create order - Full setup (Mouse + Keyboard + Monitor)
+POST {{baseUrl}}/orders
+Content-Type: application/json
+
+{
+  "items": [
+    { "productId": 2, "quantity": 1 },
+    { "productId": 3, "quantity": 1 },
+    { "productId": 4, "quantity": 1 }
+  ]
+}
+
+###
+
+### POST create order - Invalid product (expect 400)
+POST {{baseUrl}}/orders
+Content-Type: application/json
+
+{
+  "items": [
+    { "productId": 99, "quantity": 1 }
+  ]
+}
+
+###
+
+### GET all orders
+GET {{baseUrl}}/orders
+Accept: application/json
+
+###
