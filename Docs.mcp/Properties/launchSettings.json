@@ -1,0 +1,11 @@
+{
+  "profiles": {
+    "Docs.mcp": {
+      "commandName": "Project",
+      "applicationUrl": "http://localhost:5145",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    }
+  }
+}
