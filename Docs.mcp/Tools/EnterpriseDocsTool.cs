@@ -3,10 +3,6 @@ using System.ComponentModel;
 using Azure;
 using Azure.Search.Documents.KnowledgeBases;
 using Azure.Search.Documents.KnowledgeBases.Models;
-using Azure.Search.Documents;
-using Azure.Search.Documents.Indexes;
-using Azure.Search.Documents.Indexes.Models;
-using Azure.Core;
 
 namespace Docs.mcp.Tools;
 
@@ -15,22 +11,45 @@ public static class EnterpriseDocsTool
 {
     private static string GetSearchEndpoint(IConfiguration configuration) => configuration["AzureAISearch:Endpoint"]!;
     private static string GetSearchApiKey(IConfiguration configuration) => configuration["AzureAISearch:ApiKey"]!;
-    private static string GetKnowledgeBaseName(IConfiguration configuration) => configuration["AzureAISearch:KnowledgeBaseName"]!;
+    private static string GetDevelopmentKnowledgeBaseName(IConfiguration configuration) => configuration["AzureAISearch:DevelopmentKnowledgeBaseName"]!;
+    private static string GetBusinessLogicKnowledgeBaseName(IConfiguration configuration) => configuration["AzureAISearch:BusinessLogicKnowledgeBaseName"]!;
 
-    [McpServerTool, Description("Retrieves enterprise documentation from the Azure AI Search Knowledge Base. Use this tool to find information about internal coding standards, architectural patterns, and technical guidelines that developers must follow. Provide a natural language query to get consolidated, relevant content from the knowledge base.")]
-    public static async Task<string> QueryEnterpriseDocs(
+    [McpServerTool, Description("Used to retrieve information on how code standards are implemented in our company. Retrieves enterprise documentation from the Azure AI Search Knowledge Base, including internal coding standards, architectural patterns, technical guidelines, internal development guidance, and official tool documentation. It helps developers follow approved internal coding patterns and complement them with authoritative vendor docs when needed. Provide a natural language query to get consolidated, relevant content from the knowledge base.")]
+    public static async Task<string> QueryDevelopmentDocs(
         IConfiguration configuration,
         [Description("The query to retrieve consolidated documentation data for.")] string query)
     {
         var searchEndpoint = GetSearchEndpoint(configuration);
         var searchApiKey = GetSearchApiKey(configuration);
-        var knowledgeBaseName = GetKnowledgeBaseName(configuration);
+        var knowledgeBaseName = GetDevelopmentKnowledgeBaseName(configuration);
 
         if (string.IsNullOrWhiteSpace(searchEndpoint) || string.IsNullOrWhiteSpace(searchApiKey) || string.IsNullOrWhiteSpace(knowledgeBaseName))
         {
             return "Azure AI Search configuration is missing. Please check Endpoint, ApiKey, and KnowledgeBaseName settings.";
         }
 
+        return await QueryKnowledgeBase(searchEndpoint, searchApiKey, knowledgeBaseName, query);
+    }
+
+    [McpServerTool, Description("Used to retrieve business logic documentation for internal rules, domain policies, pricing, discounts, workflows, and process decisions. It helps developers and analysts apply approved business behavior consistently across systems and use official internal documentation as the source of truth. Provide a natural language query to get consolidated, relevant content from the business logic knowledge base.")]
+    public static async Task<string> QueryBusinessLogicDocs(
+        IConfiguration configuration,
+        [Description("The query to retrieve consolidated business logic documentation data for.")] string query)
+    {
+        var searchEndpoint = GetSearchEndpoint(configuration);
+        var searchApiKey = GetSearchApiKey(configuration);
+        var knowledgeBaseName = GetBusinessLogicKnowledgeBaseName(configuration);
+
+        if (string.IsNullOrWhiteSpace(searchEndpoint) || string.IsNullOrWhiteSpace(searchApiKey) || string.IsNullOrWhiteSpace(knowledgeBaseName))
+        {
+            return "Azure AI Search configuration is missing. Please check Endpoint, ApiKey, and BusinessLogicKnowledgeBaseName settings.";
+        }
+
+        return await QueryKnowledgeBase(searchEndpoint, searchApiKey, knowledgeBaseName, query);
+    }
+
+    private static async Task<string> QueryKnowledgeBase(string searchEndpoint, string searchApiKey, string knowledgeBaseName, string query)
+    {
         var credential = new AzureKeyCredential(searchApiKey);
         var kbClient = new KnowledgeBaseRetrievalClient(
             endpoint: new Uri(searchEndpoint),
