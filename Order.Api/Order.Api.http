@@ -50,6 +50,18 @@ Content-Type: application/json
 
 ###
 
+### POST create order - 2 Laptops (total ~$2599.98)
+POST {{baseUrl}}/orders
+Content-Type: application/json
+
+{
+  "items": [
+    { "productId": 1, "quantity": 2 }
+  ]
+}
+
+###
+
 ### GET all orders
 GET {{baseUrl}}/orders
 Accept: application/json
