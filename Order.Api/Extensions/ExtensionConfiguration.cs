@@ -1,4 +1,8 @@
 using Microsoft.EntityFrameworkCore;
+using OpenTelemetry.Logs;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 using Order.Api.Data;
 using Order.Api.Endpoints;
 using Order.Api.Entities;
@@ -7,11 +11,33 @@ namespace Order.Api.Extensions;
 
 public static class ExtensionConfiguration
 {
-    public static IServiceCollection ConfigureServices(this IServiceCollection services)
+    public static IServiceCollection ConfigureServices(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddOpenApi();
         services.AddDbContext<AppDbContext>(options =>
             options.UseInMemoryDatabase("OrderDb"));
+
+        var otlpEndpoint = configuration["OpenTelemetry:OtlpEndpoint"] ?? "http://localhost:4317";
+
+        services.AddOpenTelemetry()
+            .ConfigureResource(resource => resource
+                .AddService("order-api"))
+            .WithTracing(tracing => tracing
+                .AddSource("order-api")
+                .AddAspNetCoreInstrumentation()
+                .AddHttpClientInstrumentation()
+                .AddOtlpExporter(options => options.Endpoint = new Uri(otlpEndpoint)))
+            .WithMetrics(metrics => metrics
+                .AddAspNetCoreInstrumentation()
+                .AddHttpClientInstrumentation()
+                .AddOtlpExporter(options => options.Endpoint = new Uri(otlpEndpoint)));
+
+        services.AddLogging(logging => logging
+            .AddOpenTelemetry(options =>
+            {
+                options.SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("order-api"));
+                options.AddOtlpExporter(exporterOptions => exporterOptions.Endpoint = new Uri(otlpEndpoint));
+            }));
 
         return services;
     }
