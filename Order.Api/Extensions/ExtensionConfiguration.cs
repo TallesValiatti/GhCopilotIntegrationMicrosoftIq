@@ -1,17 +1,45 @@
 using Microsoft.EntityFrameworkCore;
+using OpenTelemetry.Logs;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
+using Order.Api.Configurations;
 using Order.Api.Data;
 using Order.Api.Endpoints;
 using Order.Api.Entities;
+using Order.Api.Services;
 
 namespace Order.Api.Extensions;
 
 public static class ExtensionConfiguration
 {
+    private const string AppName = "Order.Api";
+
     public static IServiceCollection ConfigureServices(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddOpenApi();
         services.AddDbContext<AppDbContext>(options =>
             options.UseInMemoryDatabase("OrderDb"));
+
+        services.AddSingleton<DiscountService>();
+
+        services.AddOpenTelemetry()
+            .WithTracing(tracing => tracing
+                .ConfigureResource(resource => resource.AddService(AppName))
+                .AddAspNetCoreInstrumentation()
+                .AddHttpClientInstrumentation()
+                .AddEntityFrameworkCoreInstrumentation()
+                .AddSource(InstrumentationConfig.ActivitySource.Name)
+                .AddSource("Azure.*")
+                .AddOtlpExporter())
+            .WithMetrics(metrics => metrics
+                .ConfigureResource(resource => resource.AddService(AppName))
+                .AddAspNetCoreInstrumentation()
+                .AddHttpClientInstrumentation()
+                .AddOtlpExporter())
+            .WithLogging(logging => logging
+                .ConfigureResource(resource => resource.AddService(AppName))
+                .AddOtlpExporter());
 
         return services;
     }

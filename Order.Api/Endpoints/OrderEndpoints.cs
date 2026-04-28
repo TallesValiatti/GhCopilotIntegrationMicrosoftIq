@@ -1,7 +1,9 @@
 using Microsoft.EntityFrameworkCore;
+using Order.Api.Configurations;
 using Order.Api.Data;
 using Order.Api.Dtos;
 using Order.Api.Entities;
+using Order.Api.Services;
 
 namespace Order.Api.Endpoints;
 
@@ -10,8 +12,9 @@ public static class OrderEndpoints
     public static void MapOrderEndpoints(this WebApplication app)
     {
         // POST /orders - Create a new order
-        app.MapPost("/orders", async (CreateOrderDto request, AppDbContext db) =>
+        app.MapPost("/orders", async (CreateOrderDto request, AppDbContext db, DiscountService discountService) =>
         {
+            using var activity = InstrumentationConfig.ActivitySource.StartActivity("orders.create");
             var productIds = request.Items
             .Select(i => i.ProductId)
             .ToList();
@@ -26,8 +29,13 @@ public static class OrderEndpoints
 
             if (missingIds.Count > 0)
             {
+                activity?.SetTag("error", true);
+                activity?.SetTag("missing.product.ids", string.Join(", ", missingIds));
                 return Results.BadRequest($"Products not found: {string.Join(", ", missingIds)}");
             }
+
+            var grossTotal = request.Items.Sum(i => products[i.ProductId].Price * i.Quantity);
+            var (discountRate, discountAmount, netTotal) = discountService.Calculate(grossTotal);
 
             var order = new Entities.Order
             {
@@ -35,13 +43,20 @@ public static class OrderEndpoints
                 {
                     ProductId = i.ProductId,
                     Quantity = i.Quantity
-                }).ToList()
+                }).ToList(),
+                GrossTotal = grossTotal,
+                DiscountRate = discountRate,
+                DiscountAmount = discountAmount,
+                NetTotal = netTotal
             };
-
 
             db.Orders.Add(order);
             await db.SaveChangesAsync();
 
+            activity?.SetTag("order.id", order.Id);
+            activity?.SetTag("order.gross_total", order.GrossTotal);
+            activity?.SetTag("order.discount_rate", order.DiscountRate);
+            activity?.SetTag("order.net_total", order.NetTotal);
 
             var orderDto = new OrderDto(
                 order.Id,
@@ -51,7 +66,11 @@ public static class OrderEndpoints
                     products[i.ProductId].Name,
                     i.Quantity,
                     products[i.ProductId].Price
-                )).ToList()
+                )).ToList(),
+                order.GrossTotal,
+                order.DiscountRate,
+                order.DiscountAmount,
+                order.NetTotal
             );
 
             return Results.Created($"/orders/{order.Id}", orderDto);
@@ -60,6 +79,7 @@ public static class OrderEndpoints
         // GET /orders - Retrieve all orders with product details
         app.MapGet("/orders", async (AppDbContext db) =>
         {
+            using var activity = InstrumentationConfig.ActivitySource.StartActivity("orders.list");
             var orders = await db.Orders
                 .Include(o => o.Items)
                 .ThenInclude(i => i.Product)
@@ -71,9 +91,15 @@ public static class OrderEndpoints
                         i.Product.Name,
                         i.Quantity,
                         i.Product.Price
-                    )).ToList()
+                    )).ToList(),
+                    o.GrossTotal,
+                    o.DiscountRate,
+                    o.DiscountAmount,
+                    o.NetTotal
                 ))
                 .ToListAsync();
+
+            activity?.SetTag("orders.count", orders.Count);
 
             return Results.Ok(orders);
         });
