@@ -102,7 +102,7 @@ OpenAPI is available at `http://localhost:<port>/openapi/v1.json` in development
 ## References
 
 Part 1 article: https://www.azurebrasil.cloud/blog/do-conhecimento-corporativo-ao-codigo-evoluindo-aplicacoes-com-work-iq-foundry-iq-e-github-copilot-parte-1/  
-Part 2 article: https://www.azurebrasil.cloud/blog/do-conhecimento-corporativo-ao-codigo-evoluindo-aplicacoes-com-work-iq-foundry-iq-e-github-copilot-parte-2/
+Part 2 article: https://www.azurebrasil.cloud/blog/do-conhecimento-corporativo-ao-codigo-evoluindo-aplicacoes-com-work-iq-foundry-iq-e-github-copilot-parte-2/  
 WorkIQ overview: https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/workiq-overview  
 Foundry IQ overview: https://learn.microsoft.com/en-us/azure/foundry/agents/concepts/what-is-foundry-iq  
 Azure AI Search: https://learn.microsoft.com/en-us/azure/search/search-what-is-azure-search  
